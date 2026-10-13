@@ -15,12 +15,12 @@ function getSubcommandInfo(commandData) {
     
     if (commandData.options) {
         for (const option of commandData.options) {
-if (option.type === 1) {
+            if (option.type === 1) {
                 subcommands.push(option.name);
-} else if (option.type === 2) {
+            } else if (option.type === 2) {
                 if (option.options) {
                     for (const subOption of option.options) {
-if (subOption.type === 1) {
+                        if (subOption.type === 1) {
                             subcommands.push(`${option.name}/${subOption.name}`);
                         }
                     }
@@ -39,9 +39,7 @@ async function getAllFiles(directory, fileList = []) {
         const filePath = path.join(directory, file.name);
         
         if (file.isDirectory()) {
-            if (file.name === 'modules') {
-                continue;
-            }
+            // FIXED: Allow searching inside 'modules' directories
             await getAllFiles(filePath, fileList);
         } else if (file.name.endsWith('.js')) {
             fileList.push(filePath);
@@ -83,7 +81,6 @@ export async function loadCommands(client) {
             
             if (!uniqueCommandNames.has(primaryCommandName)) {
                 uniqueCommandNames.add(primaryCommandName);
-                
                 client.commands.set(primaryCommandName, command);
             }
             

@@ -1,8 +1,7 @@
-const { SlashCommandBuilder } = require('discord.js');
-// Import database helper if needed depending on your project structure, or use client methods
-const { getTemporaryChannelInfo } = require('../../../utils/database.js'); // Adjust path if needed
+import { SlashCommandBuilder } from 'discord.js';
+import { getTemporaryChannelInfo } from '../../../utils/database.js';
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
         .setName('limit')
         .setDescription('Set the user limit for your temporary voice channel.')

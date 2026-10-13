@@ -1199,3 +1199,53 @@ export function formatChannelName(template, variables) {
 function generateCaseId() {
     return `${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`;
 }
+export async function registerTemporaryChannel(client, guildId, channelId, ownerId, triggerChannelId) {
+    try {
+        const config = await getJoinToCreateConfig(client, guildId);
+        
+        if (!config.temporaryChannels) {
+            config.temporaryChannels = {};
+        }
+
+        config.temporaryChannels[channelId] = {
+            ownerId,
+            triggerChannelId,
+            antiAbuse: false,
+            createdAt: Date.now()
+        };
+        
+        const success = await saveJoinToCreateConfig(client, guildId, config);
+        console.log(`[DEBUG] Registering temp channel ${channelId} for owner ${ownerId} in guild ${guildId}. Success:`, success);
+        return success;
+    } catch (error) {
+        console.error(`Error registering temporary channel for guild ${guildId}:`, error);
+        return false;
+    }
+}
+
+export async function unregisterTemporaryChannel(client, guildId, channelId) {
+    try {
+        const config = await getJoinToCreateConfig(client, guildId);
+        
+        if (config.temporaryChannels && config.temporaryChannels[channelId]) {
+            delete config.temporaryChannels[channelId];
+            return await saveJoinToCreateConfig(client, guildId, config);
+        }
+        
+        return false;
+    } catch (error) {
+        console.error(`Error unregistering temporary channel for guild ${guildId}:`, error);
+        return false;
+    }
+}
+
+export async function getTemporaryChannelInfo(client, guildId, channelId) {
+    try {
+        const config = await getJoinToCreateConfig(client, guildId);
+        console.log(`[DEBUG] Looking up channel ${channelId}. Available keys in DB:`, Object.keys(config.temporaryChannels || {}));
+        return config.temporaryChannels?.[channelId] || null;
+    } catch (error) {
+        console.error(`Error getting temporary channel info for guild ${guildId}:`, error);
+        return null;
+    }
+}

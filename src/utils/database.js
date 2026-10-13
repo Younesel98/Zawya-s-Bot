@@ -122,9 +122,6 @@ export function unwrapReplitData(data) {
     return data;
 }
 
-// Guild config access: import from services/config/guildConfig.js only.
-// Low-level storage lives in ./database/guildConfigStorage.js
-
 export { pgDb };
 
 export const getMessage = (key, replacements = {}) => {
@@ -1005,6 +1002,10 @@ export async function getApplications(client, guildId, filters = {}) {
     }
 }
 
+// ==========================================
+// 🎙️ JOIN-TO-CREATE DATABASE HELPERS
+// ==========================================
+
 export async function getJoinToCreateConfig(client, guildId) {
     if (!client.db) {
         logger.warn('Database not available for getJoinToCreateConfig');
@@ -1025,13 +1026,13 @@ export async function getJoinToCreateConfig(client, guildId) {
         const unwrapped = unwrapReplitData(config);
         
         return {
-            enabled: unwrapped.enabled || false,
-            triggerChannels: unwrapped.triggerChannels || [],
-            categoryId: unwrapped.categoryId || null,
-            channelNameTemplate: unwrapped.channelNameTemplate || "{username}'s Room",
-            userLimit: unwrapped.userLimit || 0,
-            bitrate: unwrapped.bitrate || 64000,
-            temporaryChannels: unwrapped.temporaryChannels || {},
+            enabled: unwrapped?.enabled || false,
+            triggerChannels: unwrapped?.triggerChannels || [],
+            categoryId: unwrapped?.categoryId || null,
+            channelNameTemplate: unwrapped?.channelNameTemplate || "{username}'s Room",
+            userLimit: unwrapped?.userLimit || 0,
+            bitrate: unwrapped?.bitrate || 64000,
+            temporaryChannels: unwrapped?.temporaryChannels || {},
             ...unwrapped
         };
     } catch (error) {
@@ -1165,3 +1166,37 @@ export async function unregisterTemporaryChannel(client, guildId, channelId) {
     }
 }
 
+export async function getTemporaryChannelInfo(client, guildId, channelId) {
+    try {
+        const config = await getJoinToCreateConfig(client, guildId);
+        return config.temporaryChannels?.[channelId] || null;
+    } catch (error) {
+        logger.error(`Error getting temporary channel info for guild ${guildId}:`, error);
+        return null;
+    }
+}
+
+export function formatChannelName(template, variables) {
+    let formatted = template;
+    
+    const replacements = {
+        '{username}': variables.username || 'User',
+        '{user_tag}': variables.userTag || 'User#0000',
+        '{display_name}': variables.displayName || 'User',
+        '{guild_name}': variables.guildName || 'Server',
+        '{channel_name}': variables.channelName || 'Voice Channel'
+    };
+    
+    for (const [placeholder, value] of Object.entries(replacements)) {
+        formatted = formatted.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), value);
+    }
+    
+    formatted = formatted.replace(/[^\w\s-]/g, '').trim();
+    formatted = formatted.substring(0, 100);
+    
+    return formatted || 'Voice Channel';
+}
+
+function generateCaseId() {
+    return `${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`;
+}

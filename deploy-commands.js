@@ -10,7 +10,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const commands = [];
-// Updated path to point to src/commands
 const commandsPath = path.join(__dirname, 'src', 'commands');
 
 async function loadCommands(dir) {
@@ -19,7 +18,7 @@ async function loadCommands(dir) {
         const filePath = path.join(dir, file.name);
         if (file.isDirectory()) {
             await loadCommands(filePath);
-        } else if (file.name.endsWith('.js')) {
+        } else if (file.name.endsWith('.js') && dir.includes('modules')) {
             const command = await import(`file://${filePath}`);
             const cmdData = command.default || command;
             if ('data' in cmdData && 'execute' in cmdData) {

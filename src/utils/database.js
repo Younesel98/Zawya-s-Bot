@@ -1143,8 +1143,14 @@ export async function registerTemporaryChannel(client, guildId, channelId, owner
             createdAt: Date.now()
         };
         
-        return await saveJoinToCreateConfig(client, guildId, config);
+        const key = getJoinToCreateConfigKey(guildId);
+        await client.db.set(key, config);
+        return true;
     } catch (error) {
+        logger.error(`Error registering temporary channel for guild ${guildId}:`, error);
+        return false;
+    }
+}
         logger.error(`Error registering temporary channel for guild ${guildId}:`, error);
         return false;
     }

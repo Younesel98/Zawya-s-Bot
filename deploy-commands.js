@@ -10,25 +10,36 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const commands = [];
-const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+const commandsPath = path.join(__dirname, 'commands'); // Adjust folder name if needed
 
-for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file);
-    const command = await import(`file://${filePath}`);
-    if ('default' in command && 'data' in command.default && 'execute' in command.default) {
-        commands.push(command.default.data.toJSON());
-    } else {
-        console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+// Helper function to read commands recursively from subfolders
+async function loadCommands(dir) {
+    const files = fs.readdirSync(dir, { withFileTypes: true });
+    for (const file of files) {
+        const filePath = path.join(dir, file.name);
+        if (file.isDirectory()) {
+            await loadCommands(filePath);
+        } else if (file.name.endsWith('.js')) {
+            const command = await import(`file://${filePath}`);
+            const cmdData = command.default || command;
+            if ('data' in cmdData && 'execute' in cmdData) {
+                commands.push(cmdData.data.toJSON());
+            }
+        }
     }
 }
 
-const rest = new REST().setToken(process.env.DISCORD_TOKEN);
-
 (async () => {
     try {
+        if (!fs.existsSync(commandsPath)) {
+            console.error(`❌ Folder not found at: ${commandsPath}`);
+            return;
+        }
+
+        await loadCommands(commandsPath);
         console.log(`Started refreshing ${commands.length} application (/) commands.`);
 
+        const rest = new REST().setToken(process.env.DISCORD_TOKEN);
         await rest.put(
             Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
             { body: commands },

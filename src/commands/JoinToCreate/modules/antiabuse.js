@@ -1,7 +1,7 @@
-const { SlashCommandBuilder } = require('discord.js');
-const { getJoinToCreateConfig, getTemporaryChannelInfo } = require('../../../utils/database.js'); // Adjust path if needed
+import { SlashCommandBuilder } from 'discord.js';
+import { getJoinToCreateConfig, getTemporaryChannelInfo } from '../../../utils/database.js';
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
         .setName('antiabuse')
         .setDescription('Protect your temp voice channel from unauthorized joins.')
@@ -31,7 +31,6 @@ module.exports = {
 
         const enable = interaction.options.getBoolean('enable');
 
-        // Update database configuration for this temporary channel
         const config = await getJoinToCreateConfig(client, guildId);
         if (config.temporaryChannels && config.temporaryChannels[voiceChannel.id]) {
             config.temporaryChannels[voiceChannel.id].antiAbuse = enable;

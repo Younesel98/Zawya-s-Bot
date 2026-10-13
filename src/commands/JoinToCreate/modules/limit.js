@@ -1,4 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
+// Import database helper if needed depending on your project structure, or use client methods
+const { getTemporaryChannelInfo } = require('../../../utils/database.js'); // Adjust path if needed
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -11,7 +13,7 @@ module.exports = {
                 .setMinValue(0)
                 .setMaxValue(99)
         ),
-    async execute(interaction) {
+    async execute(interaction, client) {
         const member = interaction.member;
         const voiceChannel = member.voice.channel;
 
@@ -19,13 +21,13 @@ module.exports = {
             return interaction.reply({ content: '❌ You must be in your temporary voice channel to use this command.', ephemeral: true });
         }
 
-        const channelData = global.tempChannelData?.get(voiceChannel.id);
+        const tempInfo = await getTemporaryChannelInfo(client, interaction.guild.id, voiceChannel.id);
 
-        if (!channelData) {
+        if (!tempInfo) {
             return interaction.reply({ content: '❌ This is not a registered temporary voice channel.', ephemeral: true });
         }
 
-        if (channelData.ownerId !== member.id) {
+        if (tempInfo.ownerId !== member.id) {
             return interaction.reply({ content: '❌ Only the owner of this temporary voice channel can change its limit.', ephemeral: true });
         }
 

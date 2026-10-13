@@ -574,7 +574,7 @@ export async function getLeaderboard(client, guildId, limit = 10) {
                     xp: unwrapped.xp || 0,
                     level: unwrapped.level || 0,
                     totalXp: unwrapped.totalXp || 0,
-rank: 0
+                    rank: 0
                 };
             } catch (error) {
                 logger.error(`Error processing leaderboard key ${key}:`, error);
@@ -856,7 +856,7 @@ export async function createApplication(client, application) {
     const newApplication = {
         ...application,
         id: applicationId,
-status: 'pending',
+        status: 'pending',
         createdAt: Date.now(),
         updatedAt: Date.now(),
         reviewedBy: null,
@@ -1131,9 +1131,14 @@ export async function registerTemporaryChannel(client, guildId, channelId, owner
     try {
         const config = await getJoinToCreateConfig(client, guildId);
         
+        if (!config.temporaryChannels) {
+            config.temporaryChannels = {};
+        }
+
         config.temporaryChannels[channelId] = {
             ownerId,
             triggerChannelId,
+            antiAbuse: false,
             createdAt: Date.now()
         };
         
@@ -1148,7 +1153,7 @@ export async function unregisterTemporaryChannel(client, guildId, channelId) {
     try {
         const config = await getJoinToCreateConfig(client, guildId);
         
-        if (config.temporaryChannels[channelId]) {
+        if (config.temporaryChannels && config.temporaryChannels[channelId]) {
             delete config.temporaryChannels[channelId];
             return await saveJoinToCreateConfig(client, guildId, config);
         }
@@ -1163,7 +1168,7 @@ export async function unregisterTemporaryChannel(client, guildId, channelId) {
 export async function getTemporaryChannelInfo(client, guildId, channelId) {
     try {
         const config = await getJoinToCreateConfig(client, guildId);
-        return config.temporaryChannels[channelId] || null;
+        return config.temporaryChannels?.[channelId] || null;
     } catch (error) {
         logger.error(`Error getting temporary channel info for guild ${guildId}:`, error);
         return null;
@@ -1186,7 +1191,7 @@ export function formatChannelName(template, variables) {
     }
     
     formatted = formatted.replace(/[^\w\s-]/g, '').trim();
-formatted = formatted.substring(0, 100);
+    formatted = formatted.substring(0, 100);
     
     return formatted || 'Voice Channel';
 }

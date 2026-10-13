@@ -349,3 +349,52 @@ function trimCooldownMapIfNeeded() {
         channelCreationCooldown.delete(entries[index][0]);
     }
 }
+// Add these functions to your database.js file
+
+export async function getTemporaryChannelInfo(client, guildId, channelId) {
+    try {
+        const config = await getJoinToCreateConfig(client, guildId);
+        if (config && config.temporaryChannels && config.temporaryChannels[channelId]) {
+            return config.temporaryChannels[channelId];
+        }
+        return null;
+    } catch (error) {
+        logger.error(`Error getting temp channel info for ${channelId}:`, error);
+        return null;
+    }
+}
+
+export async function registerTemporaryChannel(client, guildId, channelId, ownerId, triggerChannelId) {
+    try {
+        const config = await getJoinToCreateConfig(client, guildId);
+        if (!config.temporaryChannels) {
+            config.temporaryChannels = {};
+        }
+        config.temporaryChannels[channelId] = {
+            ownerId: ownerId,
+            triggerChannelId: triggerChannelId,
+            antiAbuse: false,
+            createdAt: Date.now()
+        };
+        await client.db.set(`guild:${guildId}:jointocreate`, config);
+        return true;
+    } catch (error) {
+        logger.error(`Error registering temp channel ${channelId}:`, error);
+        return false;
+    }
+}
+
+export async function unregisterTemporaryChannel(client, guildId, channelId) {
+    try {
+        const config = await getJoinToCreateConfig(client, guildId);
+        if (config && config.temporaryChannels && config.temporaryChannels[channelId]) {
+            delete config.temporaryChannels[channelId];
+            await client.db.set(`guild:${guildId}:jointocreate`, config);
+            return true;
+        }
+        return false;
+    } catch (error) {
+        logger.error(`Error unregistering temp channel ${channelId}:`, error);
+        return false;
+    }
+}

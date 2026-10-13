@@ -10,9 +10,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const commands = [];
-const commandsPath = path.join(__dirname, 'commands'); // Adjust folder name if needed
+// Updated path to point to src/commands
+const commandsPath = path.join(__dirname, 'src', 'commands');
 
-// Helper function to read commands recursively from subfolders
 async function loadCommands(dir) {
     const files = fs.readdirSync(dir, { withFileTypes: true });
     for (const file of files) {
@@ -24,6 +24,8 @@ async function loadCommands(dir) {
             const cmdData = command.default || command;
             if ('data' in cmdData && 'execute' in cmdData) {
                 commands.push(cmdData.data.toJSON());
+            } else {
+                console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
             }
         }
     }
@@ -40,6 +42,7 @@ async function loadCommands(dir) {
         console.log(`Started refreshing ${commands.length} application (/) commands.`);
 
         const rest = new REST().setToken(process.env.DISCORD_TOKEN);
+
         await rest.put(
             Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
             { body: commands },
